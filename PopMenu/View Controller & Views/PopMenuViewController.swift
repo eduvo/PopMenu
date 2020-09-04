@@ -118,7 +118,7 @@ final public class PopMenuViewController: UIViewController {
     public private(set) var actions: [PopMenuAction] = []
     
     /// Max content width allowed for the content to stretch to.
-    fileprivate let maxContentWidth: CGFloat = UIScreen.main.bounds.size.width * 0.9
+    fileprivate let maxContentWidth: CGFloat = (UIApplication.shared.keyWindow)!.frame.size.width * 0.9
     
     // MARK: - View Life Cycle
     
@@ -347,9 +347,10 @@ extension PopMenuViewController {
     ///
     /// - Returns: The source origin point
     fileprivate func calculateContentOrigin(with size: CGSize) -> CGPoint {
-        guard let sourceFrame = absoluteSourceFrame else { return CGPoint(x: view.center.x - size.width / 2, y: view.center.y - size.height / 2) }
-        let minContentPos: CGFloat = UIScreen.main.bounds.size.width * 0.05
-        let maxContentPos: CGFloat = UIScreen.main.bounds.size.width * 0.95
+        let window = UIApplication.shared.keyWindow!
+        guard let sourceFrame = absoluteSourceFrame else { return CGPoint(x: window.frame.midX - size.width / 2, y: window.frame.midY - size.height / 2) }
+        let minContentPos: CGFloat = window.frame.size.width * 0.05
+        let maxContentPos: CGFloat = window.frame.size.width * 0.95
         
         // Get desired content origin point
         let offsetX = (size.width - sourceFrame.size.width ) / 2
