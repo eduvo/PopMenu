@@ -55,7 +55,7 @@ final public class PopMenuViewController: UIViewController {
     
     /// The calculated content frame.
     public lazy var contentFrame: CGRect = {
-        return calculateContentFittingFrame()
+        return calculateContentFittingFrame(inFrame: UIApplication.shared.keyWindow!.frame)
     }()
     
     // MARK: - Configurations
@@ -211,7 +211,7 @@ final public class PopMenuViewController: UIViewController {
     public override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         coordinator.animate(alongsideTransition: { context in
             self.configureBackgroundView()
-            self.contentFrame = self.calculateContentFittingFrame()
+            self.contentFrame = self.calculateContentFittingFrame(inFrame: CGRect(origin: .zero, size: size))
             self.setupContentConstraints()
         })
         
@@ -295,38 +295,46 @@ extension PopMenuViewController {
     
     /// Activate necessary constraints.
     fileprivate func setupContentConstraints() {
-        contentLeftConstraint = containerView.leftAnchor.constraint(equalTo: view.leftAnchor, constant: contentFrame.origin.x)
-        contentTopConstraint = containerView.topAnchor.constraint(equalTo: view.topAnchor, constant: contentFrame.origin.y)
-        contentWidthConstraint = containerView.widthAnchor.constraint(equalToConstant: contentFrame.size.width)
-        contentHeightConstraint = containerView.heightAnchor.constraint(equalToConstant: contentFrame.size.height)
+        if (contentLeftConstraint == nil) {
+            contentLeftConstraint = containerView.leftAnchor.constraint(equalTo: view.leftAnchor, constant: contentFrame.origin.x)
+            contentTopConstraint = containerView.topAnchor.constraint(equalTo: view.topAnchor, constant: contentFrame.origin.y)
+            contentWidthConstraint = containerView.widthAnchor.constraint(equalToConstant: contentFrame.size.width)
+            contentHeightConstraint = containerView.heightAnchor.constraint(equalToConstant: contentFrame.size.height)
         
-        // Activate container view constraints
-        NSLayoutConstraint.activate([
-            contentLeftConstraint,
-            contentTopConstraint,
-            contentWidthConstraint,
-            contentHeightConstraint
-        ])
-        // Activate content view constraints
-        NSLayoutConstraint.activate([
-            contentView.leftAnchor.constraint(equalTo: containerView.leftAnchor),
-            contentView.rightAnchor.constraint(equalTo: containerView.rightAnchor),
-            contentView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            contentView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
-        ])
-        // Activate blur overlay constraints
-        NSLayoutConstraint.activate([
-            blurOverlayView.leftAnchor.constraint(equalTo: containerView.leftAnchor),
-            blurOverlayView.rightAnchor.constraint(equalTo: containerView.rightAnchor),
-            blurOverlayView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            blurOverlayView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
-        ])
+            // Activate container view constraints
+            NSLayoutConstraint.activate([
+                contentLeftConstraint,
+                contentTopConstraint,
+                contentWidthConstraint,
+                contentHeightConstraint
+            ])
+            // Activate content view constraints
+            NSLayoutConstraint.activate([
+                contentView.leftAnchor.constraint(equalTo: containerView.leftAnchor),
+                contentView.rightAnchor.constraint(equalTo: containerView.rightAnchor),
+                contentView.topAnchor.constraint(equalTo: containerView.topAnchor),
+                contentView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+            ])
+            // Activate blur overlay constraints
+            NSLayoutConstraint.activate([
+                blurOverlayView.leftAnchor.constraint(equalTo: containerView.leftAnchor),
+                blurOverlayView.rightAnchor.constraint(equalTo: containerView.rightAnchor),
+                blurOverlayView.topAnchor.constraint(equalTo: containerView.topAnchor),
+                blurOverlayView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+            ])
+        } else {
+            contentLeftConstraint.constant = contentFrame.origin.x
+            contentTopConstraint.constant = contentFrame.origin.y
+            contentWidthConstraint.constant = contentFrame.size.width
+            contentHeightConstraint.constant = contentFrame.size.height
+            view.layoutIfNeeded()
+        }
     }
     
     /// Determine the fitting frame for content.
     ///
     /// - Returns: The fitting frame
-    fileprivate func calculateContentFittingFrame() -> CGRect {
+    fileprivate func calculateContentFittingFrame(inFrame viewFrame: CGRect) -> CGRect {
         var height: CGFloat
         
         if actions.count >= appearance.popMenuActionCountForScrollable {
@@ -338,7 +346,7 @@ extension PopMenuViewController {
         }
         
         let size = CGSize(width: calculateContentWidth(), height: height)
-        let origin = calculateContentOrigin(with: size)
+        let origin = calculateContentOrigin(viewFrame, with: size)
         
         return CGRect(origin: origin, size: size)
     }
@@ -346,11 +354,10 @@ extension PopMenuViewController {
     /// Determine where the menu should display.
     ///
     /// - Returns: The source origin point
-    fileprivate func calculateContentOrigin(with size: CGSize) -> CGPoint {
-        let window = UIApplication.shared.keyWindow!
-        guard let sourceFrame = absoluteSourceFrame else { return CGPoint(x: window.frame.midX - size.width / 2, y: window.frame.midY - size.height / 2) }
-        let minContentPos: CGFloat = window.frame.size.width * 0.05
-        let maxContentPos: CGFloat = window.frame.size.width * 0.95
+    fileprivate func calculateContentOrigin(_ viewFrame: CGRect, with size: CGSize) -> CGPoint {
+        guard let sourceFrame = absoluteSourceFrame else { return CGPoint(x: viewFrame.midX - size.width / 2, y: viewFrame.midY - size.height / 2) }
+        let minContentPos: CGFloat = viewFrame.size.width * 0.05
+        let maxContentPos: CGFloat = viewFrame.size.width * 0.95
         
         // Get desired content origin point
         let offsetX = (size.width - sourceFrame.size.width ) / 2
